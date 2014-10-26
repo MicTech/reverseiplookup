@@ -38,6 +38,4 @@ This is just dummy service, nothing more, we could have them many behind load ba
 
 From my point of view, we can do lot of on preprocess data side. Generate ip addresses for each range before we load them to memory, instead of do that during the loading.
 
-Also precalculate how big array will be in memory, instead of creating dynamically.
-
 Or rewrite to Go.

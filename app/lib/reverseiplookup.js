@@ -1,38 +1,41 @@
 var csv = require('fast-csv');
 
 var countries = [];
-var ipaddresses = [];
+var ipAddressesSegments = [];
 
 function getCountryIndex(country) {
     return (!!~countries.indexOf(country)) ? countries.indexOf(country) : (countries.push(country) - 1);
 }
 
 function saveRange(data) {
-    var start = data[0];
-    var end = data[1];
-    var country = data[2];
-    var countryIndex = getCountryIndex(country);
+    var rangeFrom = parseInt(data[0]);
+    var rangeTo = parseInt(data[1]);
+    var countryName = data[2];
+    var countryIndex = getCountryIndex(countryName);
 
-    while(start <= end) {
-        var index = start++;
+    var segmentId = rangeFrom >> 24;
+    var ipFrom = rangeFrom & 0xFFFFFF;
+    var ipTo = rangeTo & 0xFFFFFF;
+    
+    var segment = ipAddressesSegments[segmentId];
+    
+    if(!segment) {
+        segment = new Buffer(0xFFFFFF);
+        ipAddressesSegments[segmentId] = segment;
+    }
 
-        var firstPart = (index + '').substring(0, 2);            
-        var secondPart = (index + '').substring(2);
-
-        if(ipaddresses[firstPart] == undefined) {
-            ipaddresses[firstPart] = [];
-        }
-
-        ipaddresses[firstPart][secondPart] = countryIndex;
-    }    
+    while(ipFrom <= ipTo) {
+        segment[ipFrom] = countryIndex;
+        ipFrom++;
+    }
 }
 
 exports.loadDataSet = function(callback) {
     console.log("Start loading csv")
 
     csv.fromPath("../data/partial.transformed.csv")
-       .on("data", function(data) {
-            saveRange(data);
+       .on("data", function(row) {
+            saveRange(row);
         })
        .on("end", function() {
             console.log("Load of csv is done!");
@@ -50,15 +53,16 @@ exports.isValidIpAddress = function(ipaddress) {
 }
 
 exports.getCountry = function(ipaddressdec) {
-    var firstPart = (ipaddressdec + '').substring(0, 2);
-    var secondPart = (ipaddressdec + '').substring(2);
+    var segment = ipAddressesSegments[ipaddressdec >> 24];
+    if (!segment) {
+        return "N/A";
+    }
+    var ip = ipaddressdec & 0xFFFFFF;
+    
+    var countryId = segment[ip];
+    if (!countryId) {
+        return "N/A";       
+    }
 
-    if(typeof ipaddresses[firstPart] != 'undefined') {
-        if(typeof ipaddresses[firstPart][secondPart] != 'undefined') {
-            var countryIndex = ipaddresses[firstPart][secondPart];
-            return countries[countryIndex];
-        }
-    } 
-
-    return "N/A";
+    return countries[countryId];
 }

@@ -20,7 +20,8 @@ server.get('/api/v1/ip/:ipaddress', function (req, res, next) {
   
         if (country != "N/A") {
             res.contentType = 'json';
-            res.send(200, "{Country: '" + country +"'}");
+            res.cache(86400);
+            res.send(200, {Country: country});
         } else {
             res.send(400, "IP address is not in the list!");
         }  
